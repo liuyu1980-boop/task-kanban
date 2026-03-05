@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能股票管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+            color: #fff;
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .nav-tab {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .nav-tab.active { background: rgba(0,212,255,0.3); }
+        .section { display: none; }
+        .section.active { display: block; }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .profit { color: #2ed573; }
+        .loss { color: #ff4757; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="kanban.html" style="color: #00d4ff;">返回任务看板</a>
+        <h1>智能股票管理系统</h1>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('portfolio')">持仓管理</button>
+            <button class="nav-tab" onclick="showTab('analysis')">AI分析</button>
+            <button class="nav-tab" onclick="showTab('alerts')">智能提醒</button>
+        </div>
+        
+        <div id="portfolio" class="section active">
+            <!-- 添加/修改持仓 -->
+            <div class="card">
+                <h3>添加/修改持仓</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #888; font-size: 0.9em;">股票代码</label>
+                        <input type="text" id="stockCode" placeholder="如: 600111" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #888; font-size: 0.9em;">股票名称</label>
+                        <input type="text" id="stockName" placeholder="如: 北方稀土" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #888; font-size: 0.9em;">持仓数量</label>
+                        <input type="number" id="stockShares" placeholder="如: 200" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #888; font-size: 0.9em;">成本价</label>
+                        <input type="number" step="0.001" id="stockCost" placeholder="如: 20.235" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff;">
+                    </div>
+                </div>
+                <button onclick="addStock()" style="padding: 12px 30px; background: linear-gradient(135deg, #00d4ff, #7b2cbf); border: none; border-radius: 8px; color: #fff; cursor: pointer; font-weight: bold;">添加/更新持仓</button>
+            </div>
+            
+            <div class="card">
+                <h3>个股走势</h3>
+                <div style="margin-bottom: 10px;">
+                    <button onclick="showTrend('600111')" style="padding: 5px 15px; margin-right: 5px;">北方稀土</button>
+                    <button onclick="showTrend('603698')" style="padding: 5px 15px; margin-right: 5px;">航天工程</button>
+                    <button onclick="showTrend('000938')" style="padding: 5px 15px;">紫光股份</button>
+                </div>
+                <canvas id="trendChart" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="card">
+                <h3>持仓占比</h3>
+                <canvas id="pieChart" width="400" height="250"></canvas>
+            </div>
+            
+            <div class="card">
+                <h3>持仓列表</h3>
+                <div id="stockList"></div>
+            </div>
+        </div>
+        
+        <div id="analysis" class="section">
+            <div class="card">
+                <h3>AI交易建议</h3>
+                <div style="margin-bottom: 15px; padding: 15px; background: rgba(0,212,255,0.1); border-radius: 8px; border-left: 4px solid #00d4ff;">
+                    <strong>北方稀土 (600111)</strong>
+                    <br>建议: <span style="color: #ffa502;">持有观察</span>
+                    <br><small style="color: #888;">盈利已达173%，建议分批止盈，保留核心仓位。稀土价格处于高位，注意回调风险。</small>
+                </div>
+                
+                <div style="margin-bottom: 15px; padding: 15px; background: rgba(0,212,255,0.1); border-radius: 8px; border-left: 4px solid #00d4ff;">
+                    <strong>航天工程 (603698)</strong>
+                    <br>建议: <span style="color: #00d4ff;">持有观望</span>
+                    <br><small style="color: #888;">小幅亏损4.7%，国防军工板块有政策支撑，等待反弹机会。</small>
+                </div>
+                
+                <div style="padding: 15px; background: rgba(255,71,87,0.1); border-radius: 8px; border-left: 4px solid #ff4757;">
+                    <strong>紫光股份 (000938)</strong>
+                    <br>建议: <span style="color: #ff4757;">考虑止损</span>
+                    <br><small style="color: #888;">亏损16%，建议设置止损线。如跌破23元考虑止损，或在22-23元区间加仓摊低成本。</small>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>风险评估</h3>
+                <p>整体风险等级: <strong style="color: #ffa502;">中等</strong></p>
+                <ul style="color: #888; padding-left: 20px;">
+                    <li>单只股票占比过高（北方稀土盈利占比过大）</li>
+                    <li>市场波动风险：近期A股震荡加剧</li>
+                    <li>建议：分散投资，控制单只股票仓位</li>
+                </ul>
+                <div style="margin-top: 10px; padding: 10px; background: rgba(255,165,2,0.1); border-radius: 8px;">
+                    风险评分: 65/100 (中等风险)
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>趋势预测</h3>
+                
+                <div style="margin-bottom: 15px; padding: 15px; background: rgba(46,213,115,0.1); border-radius: 8px; border-left: 4px solid #2ed573;">
+                    <strong>北方稀土 (600111)</strong>
+                    <span style="float: right; padding: 3px 10px; background: rgba(46,213,115,0.3); border-radius: 15px; font-size: 0.85em;">看涨 ↑</span>
+                    <br><small style="color: #888;">
+                        目标价: ¥60-65 | 支撑位: ¥50 | 阻力位: ¥62
+                        <br>稀土需求旺盛，价格有望继续上涨，建议持有。
+                    </small>
+                </div>
+                
+                <div style="margin-bottom: 15px; padding: 15px; background: rgba(255,165,2,0.1); border-radius: 8px; border-left: 4px solid #ffa502;">
+                    <strong>航天工程 (603698)</strong>
+                    <span style="float: right; padding: 3px 10px; background: rgba(255,165,2,0.3); border-radius: 15px; font-size: 0.85em;">震荡 →</span>
+                    <br><small style="color: #888;">
+                        目标价: ¥38-40 | 支撑位: ¥34 | 阻力位: ¥37
+                        <br>短期震荡整理，等待军工板块政策催化。
+                    </small>
+                </div>
+                
+                <div style="padding: 15px; background: rgba(255,71,87,0.1); border-radius: 8px; border-left: 4px solid #ff4757;">
+                    <strong>紫光股份 (000938)</strong>
+                    <span style="float: right; padding: 3px 10px; background: rgba(255,71,87,0.3); border-radius: 15px; font-size: 0.85em;">看跌 ↓</span>
+                    <br><small style="color: #888;">
+                        目标价: ¥22-25 | 支撑位: ¥23 | 阻力位: ¥26
+                        <br>AI概念回调，短期承压，关注23元支撑。
+                    </small>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 15px; background: rgba(0,212,255,0.1); border-radius: 8px;">
+                    <strong>大盘趋势预测</strong>
+                    <br><small style="color: #888;">
+                        上证指数: 3200-3300点区间震荡
+                        <br>建议仓位: 60-70% | 操作策略: 回调加仓，突破减仓
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div id="alerts" class="section">
+            <div class="card">
+                <h3>价格提醒设置</h3>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div>
+                        <strong>北方稀土止盈提醒</strong>
+                        <br><small style="color: #888;">股价 ≥ ¥60 时提醒</small>
+                    </div>
+                    <div style="width: 50px; height: 26px; background: #2ed573; border-radius: 13px; position: relative;">
+                        <div style="position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 2px; right: 2px;"></div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div>
+                        <strong>北方稀土止损提醒</strong>
+                        <br><small style="color: #888;">股价 ≤ ¥50 时提醒</small>
+                    </div>
+                    <div style="width: 50px; height: 26px; background: #2ed573; border-radius: 13px; position: relative;">
+                        <div style="position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 2px; right: 2px;"></div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div>
+                        <strong>紫光股份止损提醒</strong>
+                        <br><small style="color: #888;">股价 ≤ ¥23 时提醒</small>
+                    </div>
+                    <div style="width: 50px; height: 26px; background: #2ed573; border-radius: 13px; position: relative;">
+                        <div style="position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 2px; right: 2px;"></div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                    <div>
+                        <strong>每日收盘报告</strong>
+                        <br><small style="color: #888;">每天15:30发送持仓总结</small>
+                    </div>
+                    <div style="width: 50px; height: 26px; background: #2ed573; border-radius: 13px; position: relative;">
+                        <div style="position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 2px; right: 2px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const stocks = [
+            { code: '600111', name: '北方稀土', shares: 200, cost: 20.235, current: 55.380, profit: 7029.10, profitPct: 173.69 },
+            { code: '603698', name: '航天工程', shares: 400, cost: 37.685, current: 35.920, profit: -706.02, profitPct: -4.68 },
+            { code: '000938', name: '紫光股份', shares: 400, cost: 28.700, current: 24.100, profit: -1840.14, profitPct: -16.03 }
+        ];
+        
+        function renderStocks() {
+            const container = document.getElementById('stockList');
+            let html = '';
+            stocks.forEach(stock => {
+                const profitClass = stock.profit >= 0 ? 'profit' : 'loss';
+                html += `
+                    <div style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${stock.name}</strong> (${stock.code})
+                            <br>${stock.shares}股 / 成本: ${stock.cost}
+                            <br>现价: ${stock.current} 
+                            <span class="${profitClass}">${stock.profit > 0 ? '+' : ''}${stock.profit.toFixed(2)} (${stock.profitPct.toFixed(2)}%)</span>
+                        </div>
+                        <button onclick="deleteStock('${stock.code}')" style="padding: 8px 15px; background: #ff4757; border: none; border-radius: 6px; color: #fff; cursor: pointer;">删除</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+        
+        function addStock() {
+            const code = document.getElementById('stockCode').value;
+            const name = document.getElementById('stockName').value;
+            const shares = parseInt(document.getElementById('stockShares').value);
+            const cost = parseFloat(document.getElementById('stockCost').value);
+            
+            if (!code || !name || !shares || !cost) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            // 模拟当前价
+            const current = cost * (1 + (Math.random() - 0.5) * 0.2);
+            const profit = (current - cost) * shares;
+            const profitPct = ((current - cost) / cost) * 100;
+            
+            // 检查是否已存在
+            const index = stocks.findIndex(s => s.code === code);
+            if (index >= 0) {
+                stocks[index] = { code, name, shares, cost, current, profit, profitPct };
+            } else {
+                stocks.push({ code, name, shares, cost, current, profit, profitPct });
+            }
+            
+            // 清空表单
+            document.getElementById('stockCode').value = '';
+            document.getElementById('stockName').value = '';
+            document.getElementById('stockShares').value = '';
+            document.getElementById('stockCost').value = '';
+            
+            renderStocks();
+            drawPieChart();
+            alert('持仓已更新！');
+        }
+        
+        function deleteStock(code) {
+            if (confirm('确定删除这只股票吗？')) {
+                stocks = stocks.filter(s => s.code !== code);
+                renderStocks();
+                drawPieChart();
+            }
+        }
+        
+        function showTab(tabId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function drawPieChart() {
+            const canvas = document.getElementById('pieChart');
+            const ctx = canvas.getContext('2d');
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 80;
+            
+            const total = stocks.reduce((sum, s) => sum + s.current * s.shares, 0);
+            const colors = ['#00d4ff', '#ff4757', '#ffa502'];
+            
+            let angle = -Math.PI / 2;
+            stocks.forEach((stock, i) => {
+                const value = stock.current * stock.shares;
+                const slice = (value / total) * Math.PI * 2;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + slice);
+                ctx.fillStyle = colors[i];
+                ctx.fill();
+                
+                angle += slice;
+            });
+            
+            // Center text
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Total', centerX, centerY - 5);
+            ctx.fillText(total.toFixed(0), centerX, centerY + 15);
+        }
+        
+        renderStocks();
+        drawPieChart();
+        showTrend('600111');
+        
+        function showTrend(code) {
+            const stock = stocks.find(s => s.code === code);
+            const canvas = document.getElementById('trendChart');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Generate 30 days data
+            const prices = [];
+            let price = stock.cost;
+            for (let i = 0; i < 30; i++) {
+                price = price * (1 + (Math.random() - 0.5) * 0.05);
+                prices.push(price);
+            }
+            prices[29] = stock.current;
+            
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            const range = max - min;
+            
+            // Draw line
+            ctx.strokeStyle = stock.profit >= 0 ? '#2ed573' : '#ff4757';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            prices.forEach((p, i) => {
+                const x = 20 + i * 12;
+                const y = 180 - ((p - min) / range) * 160;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Title
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Arial';
+            ctx.fillText(stock.name + ' - 30日走势', 20, 20);
+        }
+    </script>
+</body>
+</html>
